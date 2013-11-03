@@ -47,7 +47,6 @@ switch $action {
 			p.project_name,
 			p.start_date,
 			p.end_date,
-
 			coalesce((select sum(coalesce(bom.percentage, 0.0))
 			from	acs_rels r,
 				im_biz_object_members bom,
