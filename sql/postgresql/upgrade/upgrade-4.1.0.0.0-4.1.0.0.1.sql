@@ -88,18 +88,19 @@ begin
 'xml_actualcost', 'xml_actualovertimecost', 'xml_actualovertimework',
 'xml_actualovertimeworkprotecte', 'xml_actualwork', 
 'xml_actualworkprotected', 'xml_acwp', 'xml_availabilityperiods', 
-'xml_availablefrom', 'xml_availableto', 'xml_bcwp', 'xml_bcws', 
-'xml_bookingtype', 'xml_calendaruid', 'xml_cost', 'xml_costperuse', 
-'xml_costvariance', 'xml_creationdate', 'xml_cv', 'xml_elements', 
+-- 'xml_availablefrom', 'xml_availableto', 'xml_percentworkcomplete', 
+-- 'xml_bookingtype', 'xml_creationdate', 'xml_workgroup', 
+'xml_calendaruid', 'xml_cost', 'xml_costperuse', 
+'xml_costvariance', 'xml_bcwp', 'xml_bcws', 
+'xml_cv', 'xml_elements', 
 'xml_finish', 'xml_group', 'xml_initials', 'xml_isbudget', 
 'xml_iscostresource', 'xml_isenterprise', 'xml_isgeneric', 
 'xml_isinactive', 'xml_overtimecost', 'xml_overtimerate', 
 'xml_overtimerateformat', 'xml_overtimework', 
-'xml_percentworkcomplete', 'xml_regularwork', 'xml_remainingcost', 
+'xml_regularwork', 'xml_remainingcost', 
 'xml_remainingovertimecost', 'xml_remainingovertimework', 
 'xml_remainingwork', 'xml_standardrate', 'xml_standardrateformat', 
-'xml_start', 'xml_sv', 'xml_type', 'xml_work', 'xml_workgroup', 
-'xml_workvariance'
+'xml_start', 'xml_sv', 'xml_type', 'xml_work', 'xml_workvariance'
 ];
 	FOR i IN 1 .. array_upper(v_fields, 1) LOOP
 	    v_field = v_fields[i];
@@ -134,9 +135,10 @@ declare
 begin
 	v_fields := array[
 'xml_actualcost', 'xml_actualfinish', 'xml_actualovertimecost', 
-'xml_actualovertimework', 'xml_actualovertimeworkprotected', 
-'xml_actualstart', 'xml_actualwork', 'xml_actualworkprotected', 
-'xml_acwp', 'xml_baseline', 'xml_bcwp', 'xml_bcws', 'xml_bookingtype', 
+'xml_actualovertimework', 'xml_actualstart', 'xml_actualwork', 
+-- 'xml_actualovertimeworkprotected', 'xml_actualworkprotected', 
+-- 'xml_baseline', 
+'xml_acwp', 'xml_bcwp', 'xml_bcws', 'xml_bookingtype', 
 'xml_confirmed', 'xml_cost', 'xml_costratetable', 'xml_costvariance', 
 'xml_creationdate', 'xml_cv', 'xml_delay', 'xml_elements', 
 'xml_finish', 'xml_finishvariance', 'xml_fixedmaterial', 
