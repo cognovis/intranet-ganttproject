@@ -66,7 +66,7 @@ begin
 	    IF v_count = 0 THEN
 	    	    RAISE NOTICE 'gantt: field "%" does not exists - creating', v_field;
 		    v_cmd := 'alter table im_gantt_projects add column '||v_field||' text';
---		    EXECUTE v_cmd;
+		    EXECUTE v_cmd;
 	    END IF;
 	END LOOP;
 	return 0;
@@ -111,7 +111,7 @@ begin
 	    IF v_count = 0 THEN
 	    	    RAISE NOTICE 'gantt: field "%" does not exists - creating', v_field;
 		    v_cmd := 'alter table im_gantt_persons add column '||v_field||' text';
---		    EXECUTE v_cmd;
+		    EXECUTE v_cmd;
 	    END IF;
 	END LOOP;
 
@@ -162,7 +162,7 @@ begin
 	    IF v_count = 0 THEN
 	    	    RAISE NOTICE 'gantt: field "%" does not exists - creating', v_field;
 		    v_cmd := 'alter table im_gantt_assignments add column '||v_field||' text';
---		    EXECUTE v_cmd;
+		    EXECUTE v_cmd;
 	    END IF;
 	END LOOP;
 	return 0;
