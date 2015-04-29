@@ -3453,14 +3453,15 @@ ad_proc -public im_ganttproject_add_import {
     # Check if column exists
     set column_exists_p [im_column_exists ${object_type}s $column_name]
     if {$column_exists_p} { return }
-    set field_present [util_memoize [list attribute::exists_p $object_type $column_name]]
+    set field_present [attribute::exists_p $object_type $column_name]
+#    ds_comment "$column_name $field_present $object_type"
     if {!$field_present} {
-	attribute::add  -min_n_values 0 -max_n_values 1 "$object_type" "text" $column_name $column_name
-	ns_write [ns_cache flush util_memoize $field_present_command]
-	# Flush all permissions (very slow!)
-	# im_permission_flush
+        attribute::add  -min_n_values 0 -max_n_values 1 "$object_type" "string" $column_name $column_name
+        # Flush all permissions (very slow!)
+        im_permission_flush
     }		
-}
+}	
+
 
 
 
