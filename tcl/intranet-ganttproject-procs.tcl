@@ -206,7 +206,7 @@ ad_proc -public im_ganttproject_ms_project_warning_component {
 } {
     # Only show for GanttProjects
     set project_type_id [db_string project_type "select project_type_id from im_projects where project_id = :project_id" -default ""]
-    if {![im_category_is_a $project_type_id [im_project_type_consulting]]} {
+    if {![im_category_is_a $project_type_id [im_project_type_gantt]]} {
 	return ""
     }
 
@@ -240,8 +240,8 @@ ad_proc -public im_ganttproject_component {
     # 070502 Fraber: Moved into intranet-core/projects/view.tcl
     return ""
 
-    # Is this a "Consulting Project"?
-    set consulting_project_category [parameter::get -package_id [im_package_ganttproject_id] -parameter "GanttProjectType" -default "Consulting Project"]
+    # Is this a "Gantt Project"?
+    set consulting_project_category [parameter::get -package_id [im_package_ganttproject_id] -parameter "GanttProjectType" -default "Gantt Project"]
     if {![im_project_has_type $project_id $consulting_project_category]} {
         return ""
     }
@@ -315,7 +315,7 @@ ad_proc -public im_ganttproject_component {
 	<table cellspacing=1 cellpadding=1>
 	<tr>
 	<td>
-	  [im_gif "exp-gan" "Upload GanttProject Schedule"]
+	  [im_gif -translate_p 1 "exp-gan" "Upload GanttProject Schedule"]
 	  Upload .gan 
         </td>
 	<td>
@@ -466,14 +466,22 @@ ad_proc -public im_gp_check_duplicate_task_names {
 
     # create a useful error message
     set error_html ""
+
     foreach wbs [array names task_duplicate_hash] {
 	set parent_wbs $task_duplicate_hash($wbs)
 	set task_name $task_hash($wbs)
-	set parent_name $task_hash($parent_wbs)
 
-     set task_name_quoted [ad_quotehtml $task_name]
+	if {[catch {
+	    set parent_name $task_hash($parent_wbs)
+	} err_msg]} {
+	    global errorInfo
+	    ns_log Error $errorInfo
+	    set parent_name ""
+	}
+	
+	set task_name_quoted [ad_quotehtml $task_name]
 	set parent_name_quoted [ad_quotehtml $parent_name]
-
+	
 	append error_html "<li>
 	       		  <b>[lang::message::lookup "" intranet-ganttproject.Found_duplicate_task "Found a duplicate task '%task_name_quoted%'"]</b>:<br>
 	       		  [lang::message::lookup "" intranet-ganttproject.Found_duplicate_task1 "The parent task '%parent_name_quoted%' has more than one sub-task with the name '%task_name_quoted%'"].<br>
@@ -486,6 +494,7 @@ ad_proc -public im_gp_check_duplicate_task_names {
 	ad_return_complaint 1 "<br><ul>$error_html</ul><br>"
 	ad_script_abort
     }
+
     return
 } 
 
@@ -1635,11 +1644,11 @@ ad_proc -public im_gp_save_tasks_fix_structure {
     if {[llength $sub_tasks] > 0} {
 
 	# The task has children. Make sure it has the object type "im_project"
-	if {[im_project_type_consulting] != $project_type_id} {
-	    if {$debug_p} { ns_write "<li>Setting the project_type_id to 'Consulting project' because there are children\n" }
+	if {[im_project_type_gantt] != $project_type_id} {
+	    if {$debug_p} { ns_write "<li>Setting the project_type_id to 'Gantt Project' because there are children\n" }
 	    db_dml update_import_field "
 		UPDATE	im_projects
-		SET	project_type_id = [im_project_type_consulting]
+		SET	project_type_id = [im_project_type_gantt]
 		WHERE	project_id = :project_id
 	    "
 	}
@@ -2133,9 +2142,6 @@ ad_proc -public im_ganttproject_resource_component {
     set rowclass(1) "rowodd"
     set sigma "&Sigma;"
 
-
-#	ad_return_complaint 1 $left_vars
-
     if {0 != $customer_id && "" == $project_id} {
 	set project_id [db_list pids "
 	select	project_id
@@ -2211,6 +2217,7 @@ ad_proc -public im_ganttproject_resource_component {
     # Adaptive behaviour - limit the size of the component to a summary
     # suitable for the left/right columns of a project.
     if {$auto_open | "" == $top_vars} {
+
 	set duration_days [db_string dur "select to_date(:end_date, 'YYYY-MM-DD') - to_date(:start_date, 'YYYY-MM-DD')"]
 	if {"" == $duration_days} { set duration_days 0 }
 	if {$duration_days < 0} { set duration_days 0 }
@@ -2218,20 +2225,28 @@ ad_proc -public im_ganttproject_resource_component {
 	set duration_weeks [expr $duration_days / 7]
 	set duration_months [expr $duration_days / 30]
 	set duration_quarters [expr $duration_days / 91]
+	set duration_years [expr $duration_days / 360]
+	set duration_decades [expr $duration_days / 3600]
 
 	set days_too_long [expr $duration_days > $max_col]
 	set weeks_too_long [expr $duration_weeks > $max_col]
 	set months_too_long [expr $duration_months > $max_col]
 	set quarters_too_long [expr $duration_quarters > $max_col]
+        set years_too_long [expr $duration_years > $max_col]
+        set decades_too_long [expr $duration_decades > $max_col]
 
 	set top_vars "week_of_year day_of_month"
 	if {$days_too_long} { set top_vars "month_of_year week_of_year" }
 	if {$weeks_too_long} { set top_vars "quarter_of_year month_of_year" }
 	if {$months_too_long} { set top_vars "year quarter_of_year" }
 	if {$quarters_too_long} { set top_vars "year quarter_of_year" }
+	if {$years_too_long} { set top_vars "year" }
+	if {$decades_too_long} { set top_vars "decade" }
+
     }
 
     set top_vars [im_ganttproject_zoom_top_vars -zoom $zoom -top_vars $top_vars]
+    ns_log NOTICE "intranet-ganttproject-procs::im_ganttproject_resource_component: top_vars: $top_vars"
 
     # ------------------------------------------------------------
     # Define Dimensions
@@ -2313,6 +2328,7 @@ ad_proc -public im_ganttproject_resource_component {
 		CASE WHEN h.user_id in (select member_id from group_distinct_member_map where group_id = [im_profile_skill_profile]) THEN '' ELSE 'Natural Person' END as skill_p,
 
 		'<a href=${project_url}'||project_id||'>'||project_name||'</a>' as project_name_link,
+		substr(to_char(h.d, 'YYYY'), 1, 3) || '0' as decade,
 		to_char(h.d, 'YYYY') as year,
 		'<!--' || to_char(h.d, 'YYYY') || '-->Q' || to_char(h.d, 'Q') as quarter_of_year,
 		'<!--' || to_char(h.d, 'YYYY-MM') || '-->' || to_char(h.d, 'Mon') as month_of_year,
@@ -2668,6 +2684,7 @@ ad_proc -public im_ganttproject_resource_component {
 	    set val_month [expr round($val/22)]
 	    set val_quarter [expr round($val/66)]
 	    set val_year [expr round($val/260)]
+	    set val_decade [expr round($val/2600)]
 
 	    switch $period {
 		"day_of_month" { set val $val_day }
@@ -2675,6 +2692,7 @@ ad_proc -public im_ganttproject_resource_component {
 		"month_of_year" { set val "$val_month" }
 		"quarter_of_year" { set val "$val_quarter" }
 		"year" { set val "$val_year" }
+		"decade" { set val "$val_decade" }
 		default { ad_return_complaint 1 "Bad period: $period" }
 	    }
 
@@ -2870,10 +2888,8 @@ ad_proc -public im_ganttproject_gantt_component {
     # Adaptive behaviour - limit the size of the component to a summary
     # suitable for the left/right columns of a project.
     if {$auto_open || "" == $top_vars} {
-
-	set duration_days [db_string dur "
-		select to_date(:end_date, 'YYYY-MM-DD') - to_date(:start_date, 'YYYY-MM-DD')
-	"]
+	
+	set duration_days [db_string dur "select to_date(:end_date, 'YYYY-MM-DD') - to_date(:start_date, 'YYYY-MM-DD')"]
 	if {"" == $duration_days} { set duration_days 0 }
 	if {$duration_days < 0} { set duration_days 0 }
 
@@ -2881,17 +2897,22 @@ ad_proc -public im_ganttproject_gantt_component {
 	set duration_months [expr $duration_days / 30]
 	set duration_quarters [expr $duration_days / 91]
 	set duration_years [expr $duration_days / 365]
+        set duration_decades [expr $duration_days / 3650]
 
-	set days_too_long [expr $duration_days > $max_col]
-	set weeks_too_long [expr $duration_weeks > $max_col]
-	set months_too_long [expr $duration_months > $max_col]
-	set quarters_too_long [expr $duration_quarters > $max_col]
+	set days_too_long_p [expr $duration_days > $max_col]
+	set weeks_too_long_p [expr $duration_weeks > $max_col]
+	set months_too_long_p [expr $duration_months > $max_col]
+	set quarters_too_long_p [expr $duration_quarters > $max_col]
+        set years_too_long_p [expr $duration_years > $max_col]
+        set decades_too_long_p [expr $duration_decades > $max_col]
 
 	set top_vars "week_of_year day_of_month"
-	if {$days_too_long} { set top_vars "month_of_year week_of_year" }
-	if {$weeks_too_long} { set top_vars "month_of_year" }
-	if {$months_too_long} { set top_vars "year quarter_of_year" }
-	if {$quarters_too_long} { set top_vars "year quarter_of_year" }
+	if { $days_too_long_p } { set top_vars "month_of_year week_of_year" }
+	if { $weeks_too_long_p } { set top_vars "month_of_year" }
+	if { $months_too_long_p } { set top_vars "year quarter_of_year" }
+	if { $quarters_too_long_p } { set top_vars "year quarter_of_year" }
+        if { $years_too_long_p } { set top_vars "decade" }
+        if { $decades_too_long_p } { set top_vars "decade" }
     }
 
     set top_vars [im_ganttproject_zoom_top_vars -zoom $zoom -top_vars $top_vars]
@@ -2980,6 +3001,7 @@ ad_proc -public im_ganttproject_gantt_component {
 	select
 		h.*,
 		'<a href=${project_url}'||project_id||'>'||project_name||'</a>' as project_name_link,
+		substr(to_char(h.d, 'YYYY'), 1, 3) || '0' as decade,
 		to_char(h.d, 'YYYY') as year,
 		'<!--' || to_char(h.d, 'YYYY') || '-->Q' || to_char(h.d, 'Q') as quarter_of_year,
 		'<!--' || to_char(h.d, 'YYYY-MM') || '-->' || to_char(h.d, 'Mon') as month_of_year,
